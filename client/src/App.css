@@ -1,0 +1,496 @@
+/* Google Fonts - Poppins */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --primary-color: #4A90E2;
+  --secondary-color: #50E3C2;
+  --accent-color: #F5A623;
+  --text-color: #333;
+  --light-text-color: #666;
+  --bg-light: #f9f9f9;
+  --bg-dark: #2c3e50;
+  --card-bg: #ffffff;
+  --border-color: #e0e0e0;
+  --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.08);
+  --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-light);
+  background-image: url("../public/kamaxi.png");
+  color: var(--text-color);
+  line-height: 1.6;
+}
+
+.App {
+  text-align: center;
+  padding: 20px;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--bg-dark);
+  padding: 15px 30px;
+  box-shadow: var(--shadow-light);
+  margin-bottom: 30px;
+  border-radius: 8px;
+}
+
+.nav-brand {
+  color: white;
+  font-size: 1.8em;
+  font-weight: 700;
+  text-decoration: none;
+  letter-spacing: 0.5px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.nav-item {
+  color: #c0c0c0;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1.05em;
+  transition: color 0.3s ease;
+}
+
+.nav-item:hover {
+  color: var(--secondary-color);
+}
+
+.nav-button {
+  background-color: var(--accent-color);
+  color: var(--bg-dark);
+  padding: 8px 18px;
+  border-radius: 5px;
+  font-size: 1em;
+  margin-top: 0; /* Override default button margin */
+}
+
+.nav-button:hover {
+  background-color: #e69a1f;
+  transform: translateY(-1px);
+}
+
+h1, h2, h3 {
+  color: var(--text-color);
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+/* Containers and Cards */
+.login-container,
+.maintenance-container,
+.announcements-container,
+.admin-dashboard-container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow-light);
+  transition: all 0.3s ease;
+}
+
+.login-container:hover,
+.maintenance-container:hover,
+.announcements-container:hover,
+.admin-dashboard-container:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+/* Profile Page Styling */
+.profile-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow-light);
+  text-align: left;
+}
+
+.profile-container h1 {
+  color: var(--primary-color);
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.profile-details p {
+  font-size: 1.1em;
+  margin-bottom: 12px;
+  padding-bottom: 5px;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.profile-details strong {
+  color: var(--text-color);
+  margin-right: 8px;
+}
+
+.admin-status {
+  color: var(--accent-color);
+  font-weight: 600;
+  margin-top: 20px;
+  padding: 10px;
+  background-color: rgba(245, 166, 35, 0.1);
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--light-text-color);
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"] {
+  width: calc(100% - 24px); /* Account for padding */
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-group input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+  outline: none;
+}
+
+.form-group input[type="checkbox"] {
+  margin-right: 10px;
+  transform: scale(1.1);
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-top: -10px; /* Adjust for spacing */
+}
+
+/* Buttons */
+button {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  margin-top: 15px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  outline: none;
+}
+
+button:hover {
+  background-color: #3A7BBF; /* Slightly darker primary */
+  transform: translateY(-2px);
+}
+
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Link/Toggle Buttons */
+.login-container button:last-of-type {
+  background: none;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  margin-left: 10px;
+}
+
+.login-container button:last-of-type:hover {
+  background-color: rgba(74, 144, 226, 0.1);
+  color: #3A7BBF;
+  transform: translateY(-2px);
+}
+
+/* Lists and Items */
+.payment-list,
+.announcement-list,
+.user-list ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 20px;
+}
+
+.payment-list li,
+.announcement-item,
+.user-list li {
+  background-color: var(--bg-light);
+  margin-bottom: 12px;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: left;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.payment-list li:hover,
+.announcement-item:hover,
+.user-list li:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.payment-list li.paid {
+  border-left: 6px solid var(--secondary-color);
+}
+
+.payment-list li.unpaid {
+  border-left: 6px solid var(--accent-color);
+}
+
+.announcement-item h2 {
+  margin-top: 0;
+  color: var(--primary-color);
+}
+
+.announcement-meta {
+  font-size: 0.85em;
+  color: var(--light-text-color);
+  margin-top: 10px;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 10px;
+}
+
+/* Admin Dashboard Tabs */
+.tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 25px;
+  border-bottom: 2px solid var(--border-color);
+  gap: 10px;
+}
+
+.tabs button {
+  background-color: transparent;
+  color: var(--light-text-color);
+  border: none;
+  border-radius: 0;
+  padding: 10px 15px;
+  margin: 0;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.tabs button:hover {
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+  transform: translateY(0);
+}
+
+.tabs button.active {
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+  font-weight: 600;
+  background-color: transparent;
+  transform: translateY(0);
+}
+
+.tab-content {
+  padding: 20px;
+  background-color: var(--card-bg);
+  border-radius: 0 0 12px 12px;
+  box-shadow: var(--shadow-light);
+  border-top: none; /* Remove redundant border */
+}
+
+/* Stripe Payment Form (modal styling) */
+.payment-form-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--card-bg);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-hover);
+  z-index: 1000;
+  width: 90%;
+  max-width: 500px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, -60%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+.StripeElement {
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: #fcfcfc;
+  margin-bottom: 20px;
+}
+
+
+.payment-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.payment-actions button {
+  padding: 8px 15px;
+  font-size: 0.9em;
+  margin-top: 0;
+}
+
+.payment-actions .secondary-button {
+  background-color: #f0f0f0;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+.payment-actions .secondary-button:hover {
+  background-color: #e0e0e0;
+  transform: translateY(-1px);
+}
+
+.edit-payment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 10px;
+  padding: 15px;
+  background-color: #f8fbfd; /* Lighter blue/grey */
+  border-radius: 8px;
+  border: 1px solid #d0e7ff;
+}
+
+.edit-payment-form .form-group {
+  margin-bottom: 0; /* Override default form-group margin */
+}
+
+.edit-payment-form .form-group label {
+  font-size: 0.9em;
+  margin-bottom: 5px;
+  color: var(--primary-color);
+}
+
+.edit-payment-form input[type="number"],
+.edit-payment-form input[type="date"] {
+  width: calc(100% - 20px); /* Adjust for padding */
+  padding: 8px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--border-color);
+  font-size: 15px;
+}
+
+.edit-payment-form button {
+  margin-top: 10px;
+  align-self: flex-start; /* Align buttons to the start */
+  padding: 8px 15px;
+  font-size: 0.9em;
+}
+
+.edit-payment-form .secondary-button {
+  margin-left: 10px;
+  background-color: #f0f0f0;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+.edit-payment-form .secondary-button:hover {
+  background-color: #e0e0e0;
+}
+
+.payment-creation-form {
+  background-color: #e9f5ff; /* Light blue background */
+  padding: 25px;
+  border-radius: 10px;
+  margin-top: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.payment-creation-form h3 {
+  color: var(--primary-color);
+  margin-bottom: 25px;
+}
+
+.payment-creation-form .form-group label {
+  color: var(--primary-color);
+}
+
+.multi-select {
+  width: calc(100% - 24px);
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 16px;
+  min-height: 120px; /* Make it clearly a multi-select */
+  background-color: white;
+  cursor: pointer;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.multi-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+  outline: none;
+}
+
+.multi-select option {
+  padding: 8px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .login-container,
+  .maintenance-container,
+  .announcements-container,
+  .admin-dashboard-container {
+    margin: 20px auto;
+    padding: 20px;
+  }
+
+  .tabs {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .tabs button {
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 0;
+  }
+
+  .tabs button:last-child {
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  .payment-form-modal {
+    width: 95%;
+  }
+}
