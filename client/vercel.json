@@ -1,5 +1,10 @@
 {
+<<<<<<< HEAD
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
+=======
+  "routes": [
+    { "src": "/(.*)", "dest": "/" }
+>>>>>>> 3b86ac3b93ac11de8f59eb77037d342c659d2959
   ]
 }
