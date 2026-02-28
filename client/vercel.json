@@ -1,5 +1,9 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }, 
+    {
+      "source": "/api/(.*)",
+      "destination": "https://kamaxitriplex.me/api/$1"
+    }
   ]
 }
