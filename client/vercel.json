@@ -3,7 +3,7 @@
     { "source": "/(.*)", "destination": "/index.html" }, 
     {
       "source": "/api/(.*)",
-      "destination": "https://kamaxitriplex.me/api/$1"
+      "destination": "https://society-glwm.onrender.com/api/$1"
     }
   ]
 }
