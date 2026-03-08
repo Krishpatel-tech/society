@@ -10,19 +10,14 @@ function LoginPage() {
     password: '',
     phone: '',
     apartmentNumber: '',
-    isAdmin: false,
   });
 
   const navigate = useNavigate();
 
-  const { name, email, password, phone, apartmentNumber, isAdmin } = formData;
+  const { name, email, password, phone, apartmentNumber } = formData;
 
   const onChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const onCheckboxChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.checked });
   };
 
   const onSubmit = async (e) => {
@@ -39,7 +34,7 @@ function LoginPage() {
 
       if (isRegister) {
         url = '/api/auth/register';
-        data = { name, email, password, phone, apartmentNumber, isAdmin };
+        data = { name, email, password, phone, apartmentNumber };
       } else {
         url = '/api/auth/login';
         data = { email, password };
@@ -118,16 +113,6 @@ function LoginPage() {
                 onChange={onChange}
                 required
               />
-            </div>
-            <div className="form-group checkbox-group">
-              <input
-                type="checkbox"
-                id="isAdmin"
-                name="isAdmin"
-                checked={isAdmin}
-                onChange={onCheckboxChange}
-              />
-              <label htmlFor="isAdmin">Register as Admin</label>
             </div>
           </>
         )}
