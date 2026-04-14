@@ -33,6 +33,14 @@ const UserRoute = ({ children, isAuthenticated }) => {
 function App() {
   const [isAdmin, setIsAdmin] = React.useState(false);
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [isDarkMode, setIsDarkMode] = React.useState(false);
+
+  React.useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const shouldUseDark = savedTheme === 'dark';
+    setIsDarkMode(shouldUseDark);
+    document.body.classList.toggle('dark-theme', shouldUseDark);
+  }, []);
 
   React.useEffect(() => {
     const token = localStorage.getItem('token');
@@ -60,6 +68,15 @@ function App() {
     window.location.href = '/login';
   };
 
+  const handleThemeToggle = () => {
+    const nextMode = !isDarkMode;
+    setIsDarkMode(nextMode);
+    localStorage.setItem('theme', nextMode ? 'dark' : 'light');
+    document.body.classList.toggle('dark-theme', nextMode);
+  };
+
+  const themeToggleLabel = isDarkMode ? 'Switch to light mode' : 'Switch to dark mode';
+
   return (
     <Router>
       <div className="App">
@@ -68,6 +85,28 @@ function App() {
           <div className="nav-links">
             {isAuthenticated ? (
               <>
+                <button
+                  onClick={handleThemeToggle}
+                  className="nav-item theme-toggle-button"
+                  type="button"
+                  aria-label={themeToggleLabel}
+                  title={themeToggleLabel}
+                >
+                  <svg className={`theme-icon-svg ${isDarkMode ? 'is-moon' : 'is-sun'}`} viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="theme-core" cx="12" cy="12" r="5" />
+                    <g className="theme-rays">
+                      <line x1="12" y1="1.5" x2="12" y2="4" />
+                      <line x1="12" y1="20" x2="12" y2="22.5" />
+                      <line x1="1.5" y1="12" x2="4" y2="12" />
+                      <line x1="20" y1="12" x2="22.5" y2="12" />
+                      <line x1="4.4" y1="4.4" x2="6.2" y2="6.2" />
+                      <line x1="17.8" y1="17.8" x2="19.6" y2="19.6" />
+                      <line x1="4.4" y1="19.6" x2="6.2" y2="17.8" />
+                      <line x1="17.8" y1="6.2" x2="19.6" y2="4.4" />
+                    </g>
+                    <circle className="theme-moon-cut" cx="15" cy="9" r="5" />
+                  </svg>
+                </button>
                 <Link to="/maintenance" className="nav-item">Maintenance</Link>
                 <Link to="/announcements" className="nav-item">Announcements</Link>
                 <Link to="/profile" className="nav-item">Profile</Link> {/* New Profile Link */}
@@ -75,7 +114,31 @@ function App() {
                 <button onClick={handleLogout} className="nav-item nav-button">Logout</button>
               </>
             ) : (
-              <Link to="/login" className="nav-item">Login</Link>
+              <>
+                <button
+                  onClick={handleThemeToggle}
+                  className="nav-item theme-toggle-button"
+                  type="button"
+                  aria-label={themeToggleLabel}
+                  title={themeToggleLabel}
+                >
+                  <svg className={`theme-icon-svg ${isDarkMode ? 'is-moon' : 'is-sun'}`} viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="theme-core" cx="12" cy="12" r="5" />
+                    <g className="theme-rays">
+                      <line x1="12" y1="1.5" x2="12" y2="4" />
+                      <line x1="12" y1="20" x2="12" y2="22.5" />
+                      <line x1="1.5" y1="12" x2="4" y2="12" />
+                      <line x1="20" y1="12" x2="22.5" y2="12" />
+                      <line x1="4.4" y1="4.4" x2="6.2" y2="6.2" />
+                      <line x1="17.8" y1="17.8" x2="19.6" y2="19.6" />
+                      <line x1="4.4" y1="19.6" x2="6.2" y2="17.8" />
+                      <line x1="17.8" y1="6.2" x2="19.6" y2="4.4" />
+                    </g>
+                    <circle className="theme-moon-cut" cx="15" cy="9" r="5" />
+                  </svg>
+                </button>
+                <Link to="/login" className="nav-item">Login</Link>
+              </>
             )}
           </div>
         </nav>

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 
 function LoginPage() {
   const [isRegister, setIsRegister] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -12,16 +14,31 @@ function LoginPage() {
     apartmentNumber: '',
   });
 
-  const navigate = useNavigate();
-
   const { name, email, password, phone, apartmentNumber } = formData;
 
   const onChange = (e) => {
+    if (message) {
+      setMessage('');
+      setMessageType('');
+    }
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      password: '',
+      phone: '',
+      apartmentNumber: '',
+    });
   };
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setMessage('');
+    setMessageType('');
     try {
       const config = {
         headers: {
@@ -43,18 +60,28 @@ function LoginPage() {
       const res = await axios.post(url, data, config);
 
       localStorage.setItem('token', res.data.token);
+      setMessage(isRegister ? 'Registration successful! Redirecting...' : 'Login successful! Redirecting...');
+      setMessageType('success');
       // Redirect to maintenance page or dashboard
       window.location.href = '/'; // Force full page reload to update App.js state
 
     } catch (err) {
-      console.error(err.response.data);
-      alert('Error: ' + err.response.data.msg);
+      const errorMsg = err.response?.data?.msg || 'Something went wrong. Please try again.';
+      console.error(err.response?.data || err.message);
+      setMessage(errorMsg);
+      setMessageType('error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="login-container">
-      <h1>{isRegister ? 'Register' : 'Login'}</h1>
+      <h1>{isRegister ? 'Create Your Account' : 'Welcome Back'}</h1>
+      <p className="auth-subtitle">
+        {isRegister ? 'Register to access billing, announcements, and community updates.' : 'Sign in to manage your maintenance and society updates.'}
+      </p>
+      {message && <div className={`auth-message ${messageType}`}>{message}</div>}
       <form onSubmit={onSubmit}>
         {isRegister && (
           <div className="form-group">
@@ -65,6 +92,7 @@ function LoginPage() {
               name="name"
               value={name}
               onChange={onChange}
+              placeholder="Enter your full name"
               required={isRegister}
             />
           </div>
@@ -77,6 +105,7 @@ function LoginPage() {
             name="email"
             value={email}
             onChange={onChange}
+            placeholder="you@example.com"
             required
           />
         </div>
@@ -88,6 +117,7 @@ function LoginPage() {
             name="password"
             value={password}
             onChange={onChange}
+            placeholder="Enter your password"
             required
           />
         </div>
@@ -101,6 +131,7 @@ function LoginPage() {
                 name="phone"
                 value={phone}
                 onChange={onChange}
+                placeholder="+91 9876543210"
               />
             </div>
             <div className="form-group">
@@ -111,15 +142,33 @@ function LoginPage() {
                 name="apartmentNumber"
                 value={apartmentNumber}
                 onChange={onChange}
+                placeholder="A-101"
                 required
               />
             </div>
           </>
         )}
-        <button type="submit">{isRegister ? 'Register' : 'Login'}</button>
+        <button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <span className="button-loading-content">
+              <span className="button-loader" />
+              {isRegister ? 'Creating Account...' : 'Signing In...'}
+            </span>
+          ) : (
+            isRegister ? 'Register' : 'Login'
+          )}
+        </button>
       </form>
-      <button onClick={() => setIsRegister(!isRegister)}>
-        {isRegister ? "Already have an account? Login" : "Don't have an account? Register"}
+      <button
+        className="auth-switch-button"
+        onClick={() => {
+          setIsRegister(!isRegister);
+          resetForm();
+          setMessage('');
+          setMessageType('');
+        }}
+      >
+        {isRegister ? 'Already have an account? Login' : "Don't have an account? Register"}
       </button>
     </div>
   );
