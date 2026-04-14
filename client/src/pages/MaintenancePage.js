@@ -1,68 +1,137 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements } from '@stripe/react-stripe-js';
-import PaymentForm from '../components/PaymentForm';
-
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY); // You'll need to add this to your .env
 
 function MaintenancePage() {
+  const MAX_PROOF_FILE_SIZE_BYTES = 4 * 1024 * 1024; // 4 MB
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [qrConfig, setQrConfig] = useState({ upiQrImageUrl: '', upiId: '' });
+  const [proofData, setProofData] = useState({ utr: '', proofImageUrl: '' });
+  const [proofError, setProofError] = useState('');
+  const [submittingProof, setSubmittingProof] = useState(false);
+
+  const fetchPayments = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const config = {
+        headers: {
+          'x-auth-token': token,
+        },
+      };
+      const res = await axios.get('/api/payments/my', config);
+      setPayments(res.data);
+      setLoading(false);
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  const fetchQrConfig = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const config = {
+        headers: {
+          'x-auth-token': token,
+        },
+      };
+      const res = await axios.get('/api/payments/qr-config', config);
+      setQrConfig(res.data);
+    } catch (err) {
+      console.error('Error fetching UPI QR config:', err);
+    }
+  };
 
   useEffect(() => {
-    const fetchPayments = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('No token found');
-        }
-
-        const config = {
-          headers: {
-            'x-auth-token': token,
-          },
-        };
-        const res = await axios.get('/api/payments/my', config);
-        setPayments(res.data);
-        setLoading(false);
-      } catch (err) {
-        setError(err.message);
-        setLoading(false);
-      }
-    };
     fetchPayments();
+    fetchQrConfig();
   }, []);
 
   const handlePayClick = (payment) => {
     setSelectedPayment(payment);
     setShowPaymentForm(true);
+    setProofData({ utr: '', proofImageUrl: '' });
+    setProofError('');
   };
 
-  const handlePaymentSuccess = () => {
-    alert('Payment successful!');
-    setShowPaymentForm(false);
-    setSelectedPayment(null);
-    // Re-fetch payments to update status
-    // You might want to implement a more robust state management or real-time update
-    const fetchPayments = async () => {
-        try {
-          const token = localStorage.getItem('token');
-          const config = {
-            headers: {
-              'x-auth-token': token,
-            },
-          };
-          const res = await axios.get('/api/payments/my', config);
-          setPayments(res.data);
-        } catch (err) {
-          console.error(err);
-        }
+  const handleProofInputChange = (e) => {
+    setProofData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    if (proofError) {
+      setProofError('');
+    }
+  };
+
+  const handleProofFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_PROOF_FILE_SIZE_BYTES) {
+      setProofError('Screenshot is too large. Please upload an image under 4 MB.');
+      setProofData((prev) => ({ ...prev, proofImageUrl: '' }));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setProofData((prev) => ({ ...prev, proofImageUrl: reader.result }));
+      setProofError('');
+    };
+    reader.onerror = () => {
+      setProofError('Unable to read image file. Please try again.');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmitProof = async (e) => {
+    e.preventDefault();
+    if (!selectedPayment) return;
+
+    if (!proofData.utr.trim() || !proofData.proofImageUrl) {
+      setProofError('Please provide both UTR and screenshot.');
+      return;
+    }
+
+    setSubmittingProof(true);
+    setProofError('');
+
+    try {
+      const token = localStorage.getItem('token');
+      const config = {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token,
+        },
       };
+
+      await axios.put(
+        `/api/payments/${selectedPayment._id}/submit-proof`,
+        {
+          utr: proofData.utr.trim(),
+          proofImageUrl: proofData.proofImageUrl,
+        },
+        config
+      );
+
+      alert('Payment proof submitted successfully. Awaiting admin verification.');
+      setShowPaymentForm(false);
+      setSelectedPayment(null);
       fetchPayments();
+    } catch (err) {
+      if (err.response?.status === 413) {
+        setProofError('Screenshot is too large for upload. Please use a smaller image.');
+      } else {
+        setProofError(err.response?.data?.msg || err.message || 'Failed to submit proof.');
+      }
+    } finally {
+      setSubmittingProof(false);
+    }
   };
 
   if (loading) {
@@ -105,12 +174,14 @@ function MaintenancePage() {
               <p>Due Date: {new Date(payment.dueDate).toLocaleDateString()}</p>
               <p>
                 Status:{' '}
-                <span className={`status-badge ${payment.isPaid ? 'status-paid' : 'status-unpaid'}`}>
-                  {payment.isPaid ? 'Paid' : 'Unpaid'}
+                <span className={`status-badge ${payment.status === 'PAID' ? 'status-paid' : 'status-unpaid'}`}>
+                  {payment.status === 'AWAITING_VERIFICATION' ? 'Awaiting Verification' : payment.status === 'PAID' ? 'Paid' : 'Pending'}
                 </span>
               </p>
-              {!payment.isPaid && (
-                <button onClick={() => handlePayClick(payment)}>Pay Now</button>
+              {payment.status !== 'PAID' && (
+                <button onClick={() => handlePayClick(payment)} disabled={payment.status === 'AWAITING_VERIFICATION'}>
+                  {payment.status === 'AWAITING_VERIFICATION' ? 'Proof Submitted' : 'Pay via UPI'}
+                </button>
               )}
             </li>
           ))}
@@ -119,11 +190,47 @@ function MaintenancePage() {
 
       {showPaymentForm && selectedPayment && (
         <div className="payment-form-modal">
-          <h2>Pay for Maintenance</h2>
-          <p>Payment for: ${selectedPayment.amount}</p>
-          <Elements stripe={stripePromise}>
-            <PaymentForm payment={selectedPayment} onSuccess={handlePaymentSuccess} />
-          </Elements>
+          <h2>Pay via UPI</h2>
+          <p>Maintenance Amount: ₹{selectedPayment.amount}</p>
+          {qrConfig.upiId && <p>UPI ID: {qrConfig.upiId}</p>}
+          {qrConfig.upiQrImageUrl ? (
+            <img src={qrConfig.upiQrImageUrl} alt="UPI QR Code" className="upi-qr-image" />
+          ) : (
+            <p>UPI QR is not configured yet. Please contact admin.</p>
+          )}
+          <form onSubmit={handleSubmitProof} className="payment-proof-form">
+            <div className="form-group">
+              <label htmlFor="utr">UTR / Reference Number</label>
+              <input
+                type="text"
+                id="utr"
+                name="utr"
+                value={proofData.utr}
+                onChange={handleProofInputChange}
+                placeholder="Enter transaction UTR"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="proofImage">Payment Screenshot</label>
+              <input
+                type="file"
+                id="proofImage"
+                accept="image/*"
+                onChange={handleProofFileChange}
+                required
+              />
+            </div>
+            {proofData.proofImageUrl && (
+              <div className="proof-preview">
+                <img src={proofData.proofImageUrl} alt="Payment proof preview" />
+              </div>
+            )}
+            {proofError && <div className="error-message">{proofError}</div>}
+            <button type="submit" disabled={submittingProof}>
+              {submittingProof ? 'Submitting...' : 'Submit Proof'}
+            </button>
+          </form>
           <button onClick={() => setShowPaymentForm(false)}>Cancel</button>
         </div>
       )}

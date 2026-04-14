@@ -199,6 +199,24 @@ function AdminDashboardPage() {
     }
   };
 
+  const handleVerifyPayment = async (paymentId, action) => {
+    try {
+      const token = localStorage.getItem('token');
+      const config = {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token,
+        },
+      };
+      await axios.put(`/api/payments/${paymentId}/verify`, { action }, config);
+      alert(action === 'approve' ? 'Payment marked as paid and user notified.' : 'Proof rejected and payment set back to pending.');
+      fetchData();
+    } catch (err) {
+      console.error(err.response?.data?.msg || err.message);
+      alert('Error verifying payment: ' + (err.response?.data?.msg || err.message));
+    }
+  };
+
   const handleAnnouncementInputChange = (e) => {
     setNewAnnouncementData({ ...newAnnouncementData, [e.target.name]: e.target.value });
   };
@@ -371,14 +389,36 @@ function AdminDashboardPage() {
                       </div>
                     ) : (
                       <>
-                        <span>User: {payment.user.name} ({payment.user.apartmentNumber}), Amount: ₹{payment.amount}, Due: {new Date(payment.dueDate).toLocaleDateString()}, Paid: {payment.isPaid ? 'Yes' : 'No'}</span>
+                        {(() => {
+                          const userName = payment.user?.name || 'Unknown Member';
+                          const apartmentNumber = payment.user?.apartmentNumber || 'N/A';
+                          return (
+                            <>
+                        <span>
+                          User: {userName} ({apartmentNumber}), Amount: ₹{payment.amount}, Due: {new Date(payment.dueDate).toLocaleDateString()}, Status: {payment.status || (payment.isPaid ? 'PAID' : 'PENDING')}
+                          {payment.utr ? `, UTR: ${payment.utr}` : ''}
+                        </span>
+                        {payment.proofImageUrl && (
+                          <a href={payment.proofImageUrl} target="_blank" rel="noreferrer" className="proof-link">
+                            View Payment Screenshot
+                          </a>
+                        )}
                         <div className="payment-actions">
                           <button onClick={() => handleEditPaymentClick(payment)}>Edit</button>
                           <button onClick={() => handleDeletePayment(payment._id)} className="secondary-button">Delete</button>
-                          {!payment.isPaid && (
-                            <button onClick={() => handleSendReminder(payment._id, payment.user.name)} className="secondary-button">Send Reminder</button>
+                          {payment.status !== 'PAID' && (
+                            <button onClick={() => handleSendReminder(payment._id, userName)} className="secondary-button">Send Reminder</button>
+                          )}
+                          {payment.status === 'AWAITING_VERIFICATION' && (
+                            <>
+                              <button onClick={() => handleVerifyPayment(payment._id, 'approve')}>Approve Paid</button>
+                              <button onClick={() => handleVerifyPayment(payment._id, 'reject')} className="secondary-button">Reject Proof</button>
+                            </>
                           )}
                         </div>
+                            </>
+                          );
+                        })()}
                       </>
                     )}
                   </li>
@@ -458,7 +498,7 @@ function AdminDashboardPage() {
               <ul className="announcement-list">
                 {announcements.map((announcement) => (
                   <li key={announcement._id} className="announcement-item">
-                    <span>{announcement.title} - By {announcement.author.name} on {new Date(announcement.createdAt).toLocaleDateString()}</span>
+                    <span>{announcement.title} - By {announcement.author?.name || 'Unknown'} on {new Date(announcement.createdAt).toLocaleDateString()}</span>
                     <button onClick={() => handleDeleteAnnouncement(announcement._id)}>Delete</button>
                   </li>
                 ))}

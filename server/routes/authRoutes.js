@@ -32,6 +32,11 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ msg: 'User already exists' });
     }
 
+    const existingApartment = await User.findOne({ apartmentNumber });
+    if (existingApartment) {
+      return res.status(400).json({ code: 'APARTMENT_EXISTS', msg: 'Apartment number is already registered' });
+    }
+
     user = new User({
       name,
       email,
@@ -67,6 +72,9 @@ router.post('/register', async (req, res) => {
     );
   } catch (err) {
     console.error(err.message);
+    if (err.code === 11000 && err.keyPattern?.apartmentNumber) {
+      return res.status(400).json({ code: 'APARTMENT_EXISTS', msg: 'Apartment number is already registered' });
+    }
     res.status(500).json({ msg: 'Server error' });
   }
 });

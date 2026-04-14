@@ -6,6 +6,7 @@ function AdminUserManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddUserForm, setShowAddUserForm] = useState(false);
+  const [apartmentError, setApartmentError] = useState('');
   const [newUserData, setNewUserData] = useState({
     name: '',
     email: '',
@@ -41,6 +42,9 @@ function AdminUserManagement() {
   }, []);
 
   const handleInputChange = (e) => {
+    if (e.target.name === 'apartmentNumber' && apartmentError) {
+      setApartmentError('');
+    }
     setNewUserData({ ...newUserData, [e.target.name]: e.target.value });
   };
 
@@ -50,6 +54,7 @@ function AdminUserManagement() {
 
   const handleAddUser = async (e) => {
     e.preventDefault();
+    setApartmentError('');
     try {
       const token = localStorage.getItem('token');
       const config = {
@@ -71,8 +76,14 @@ function AdminUserManagement() {
       });
       fetchUsers(); // Refresh the user list
     } catch (err) {
-      console.error(err.response?.data?.msg || err.message);
-      alert('Error adding user: ' + (err.response?.data?.msg || err.message));
+      const errorCode = err.response?.data?.code;
+      const errorMsg = err.response?.data?.msg || err.message;
+      console.error(errorMsg);
+      if (errorCode === 'APARTMENT_EXISTS') {
+        setApartmentError(errorMsg);
+      } else {
+        alert('Error adding user: ' + errorMsg);
+      }
     }
   };
 
@@ -163,6 +174,7 @@ function AdminUserManagement() {
                   onChange={handleInputChange}
                   required
                 />
+                {apartmentError && <small className="field-error">{apartmentError}</small>}
               </div>
               <div className="form-group checkbox-group">
                 <input

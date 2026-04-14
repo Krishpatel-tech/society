@@ -7,6 +7,29 @@ const generateInvoicePdf = require('../utils/generateInvoicePdf'); // Import PDF
 const express = require('express');
 const router = express.Router();
 
+const UPI_QR_IMAGE_URL = process.env.UPI_QR_IMAGE_URL || '';
+const UPI_ID = process.env.UPI_ID || '';
+
+const serializePayment = (paymentDoc) => {
+  const payment = paymentDoc.toObject ? paymentDoc.toObject() : paymentDoc;
+  const resolvedStatus = payment.status || (payment.isPaid ? 'PAID' : 'PENDING');
+  return {
+    ...payment,
+    status: resolvedStatus,
+    isPaid: resolvedStatus === 'PAID',
+  };
+};
+
+// @route   GET api/payments/qr-config
+// @desc    Get global UPI QR configuration
+// @access  Private
+router.get('/qr-config', auth, async (req, res) => {
+  res.json({
+    upiQrImageUrl: UPI_QR_IMAGE_URL,
+    upiId: UPI_ID,
+  });
+});
+
 // @route   POST api/payments/batch
 // @desc    Create multiple payment records (for all or specific members) (Admin only)
 // @access  Private/Admin
@@ -34,6 +57,7 @@ router.post('/batch', auth, auth.admin, async (req, res) => {
       amount,
       dueDate,
       isPaid: false,
+      status: 'PENDING',
     }));
 
     const createdPayments = await Payment.insertMany(newPayments);
@@ -114,8 +138,10 @@ router.post('/', auth, auth.admin, async (req, res) => {
 // @access  Private/Admin
 router.get('/', auth, auth.admin, async (req, res) => {
   try {
-    const payments = await Payment.find({}).populate('user', 'name email apartmentNumber');
-    res.json(payments);
+    const payments = await Payment.find({})
+      .populate('user', 'name email apartmentNumber')
+      .populate('verifiedBy', 'name email');
+    res.json(payments.map(serializePayment));
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
@@ -128,7 +154,97 @@ router.get('/', auth, auth.admin, async (req, res) => {
 router.get('/my', auth, async (req, res) => {
   try {
     const payments = await Payment.find({ user: req.user.id });
-    res.json(payments);
+    res.json(payments.map(serializePayment));
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// @route   PUT api/payments/:id/submit-proof
+// @desc    Submit UPI payment proof for verification (User)
+// @access  Private
+router.put('/:id/submit-proof', auth, async (req, res) => {
+  const { utr, proofImageUrl } = req.body;
+
+  if (!utr || !proofImageUrl) {
+    return res.status(400).json({ msg: 'Please provide both UTR and payment screenshot.' });
+  }
+
+  try {
+    const payment = await Payment.findById(req.params.id);
+
+    if (!payment) {
+      return res.status(404).json({ msg: 'Payment not found' });
+    }
+
+    if (payment.user.toString() !== req.user.id) {
+      return res.status(401).json({ msg: 'Not authorized to submit proof for this payment' });
+    }
+
+    const resolvedStatus = payment.status || (payment.isPaid ? 'PAID' : 'PENDING');
+    if (resolvedStatus === 'PAID') {
+      return res.status(400).json({ msg: 'This payment is already marked as paid.' });
+    }
+
+    payment.utr = String(utr).trim();
+    payment.proofImageUrl = proofImageUrl;
+    payment.proofSubmittedAt = new Date();
+    payment.status = 'AWAITING_VERIFICATION';
+    payment.isPaid = false;
+
+    const updatedPayment = await payment.save();
+    res.json(serializePayment(updatedPayment));
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// @route   PUT api/payments/:id/verify
+// @desc    Verify submitted proof and approve/reject payment (Admin)
+// @access  Private/Admin
+router.put('/:id/verify', auth, auth.admin, async (req, res) => {
+  const { action } = req.body;
+
+  if (!['approve', 'reject'].includes(action)) {
+    return res.status(400).json({ msg: 'Invalid action. Use approve or reject.' });
+  }
+
+  try {
+    const payment = await Payment.findById(req.params.id).populate('user', 'name email apartmentNumber');
+
+    if (!payment) {
+      return res.status(404).json({ msg: 'Payment not found' });
+    }
+
+    const resolvedStatus = payment.status || (payment.isPaid ? 'PAID' : 'PENDING');
+    if (action === 'approve') {
+      if (resolvedStatus === 'PAID') {
+        return res.status(400).json({ msg: 'Payment is already marked as paid.' });
+      }
+
+      payment.status = 'PAID';
+      payment.isPaid = true;
+      payment.paymentMethod = payment.paymentMethod || 'UPI';
+      payment.transactionId = payment.transactionId || payment.utr || '';
+      payment.verifiedAt = new Date();
+      payment.verifiedBy = req.user.id;
+
+      await sendEmail({
+        email: payment.user.email,
+        subject: 'Maintenance Payment Received Successfully',
+        message: `Dear ${payment.user.name},<br/><br/>We have successfully verified your maintenance payment of ₹${payment.amount} for apartment ${payment.user.apartmentNumber}.<br/>UTR: ${payment.utr || 'N/A'}<br/><br/>Thank you.<br/>KAMAXI TRIPLEX Society Management`,
+      });
+    } else {
+      payment.status = 'PENDING';
+      payment.isPaid = false;
+      payment.verifiedAt = undefined;
+      payment.verifiedBy = undefined;
+    }
+
+    const updatedPayment = await payment.save();
+    res.json(serializePayment(updatedPayment));
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
@@ -159,11 +275,14 @@ router.put('/:id', auth, auth.admin, async (req, res) => {
 
     // Allow both user (via payment gateway callback) and admin to update these fields
     payment.isPaid = isPaid !== undefined ? isPaid : payment.isPaid;
+    if (isPaid !== undefined) {
+      payment.status = isPaid ? 'PAID' : 'PENDING';
+    }
     payment.paymentMethod = paymentMethod || payment.paymentMethod;
     payment.transactionId = transactionId || payment.transactionId;
 
     const updatedPayment = await payment.save();
-    res.json(updatedPayment);
+    res.json(serializePayment(updatedPayment));
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
