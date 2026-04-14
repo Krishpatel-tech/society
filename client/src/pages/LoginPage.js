@@ -6,6 +6,7 @@ function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
+  const [apartmentError, setApartmentError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,6 +21,9 @@ function LoginPage() {
     if (message) {
       setMessage('');
       setMessageType('');
+    }
+    if (e.target.name === 'apartmentNumber' && apartmentError) {
+      setApartmentError('');
     }
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -39,6 +43,7 @@ function LoginPage() {
     setIsSubmitting(true);
     setMessage('');
     setMessageType('');
+    setApartmentError('');
     try {
       const config = {
         headers: {
@@ -66,8 +71,12 @@ function LoginPage() {
       window.location.href = '/'; // Force full page reload to update App.js state
 
     } catch (err) {
+      const errorCode = err.response?.data?.code;
       const errorMsg = err.response?.data?.msg || 'Something went wrong. Please try again.';
       console.error(err.response?.data || err.message);
+      if (isRegister && errorCode === 'APARTMENT_EXISTS') {
+        setApartmentError(errorMsg);
+      }
       setMessage(errorMsg);
       setMessageType('error');
     } finally {
@@ -145,6 +154,7 @@ function LoginPage() {
                 placeholder="A-101"
                 required
               />
+              {apartmentError && <small className="field-error">{apartmentError}</small>}
             </div>
           </>
         )}

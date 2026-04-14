@@ -419,6 +419,14 @@ body.dark-theme .status-unpaid {
   resize: vertical;
 }
 
+.field-error {
+  display: block;
+  margin-top: 6px;
+  color: #dc2626;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
 .form-group input:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
@@ -670,6 +678,40 @@ button:disabled {
   width: 90%;
   max-width: 500px;
   animation: fadeIn 0.3s ease-out;
+}
+
+.upi-qr-image {
+  width: 220px;
+  max-width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  margin: 10px auto 16px;
+  display: block;
+  background: #fff;
+}
+
+.payment-proof-form {
+  text-align: left;
+}
+
+.proof-preview img {
+  margin-top: 10px;
+  max-width: 220px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.proof-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+.error-message {
+  color: #dc2626;
+  margin-top: 8px;
+  font-size: 0.9rem;
 }
 
 .dialog-overlay {
