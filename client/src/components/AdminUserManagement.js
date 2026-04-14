@@ -106,81 +106,90 @@ function AdminUserManagement() {
       </button>
 
       {showAddUserForm && (
-        <form onSubmit={handleAddUser} className="user-form">
-          <h3>Add New Member</h3>
-          <div className="form-group">
-            <label htmlFor="newName">Name</label>
-            <input
-              type="text"
-              id="newName"
-              name="name"
-              value={newUserData.name}
-              onChange={handleInputChange}
-              required
-            />
+        <div className="dialog-overlay" onClick={() => setShowAddUserForm(false)}>
+          <div className="dialog-card" onClick={(e) => e.stopPropagation()}>
+            <form onSubmit={handleAddUser} className="user-form">
+              <h3>Add New Member</h3>
+              <div className="form-group">
+                <label htmlFor="newName">Name</label>
+                <input
+                  type="text"
+                  id="newName"
+                  name="name"
+                  value={newUserData.name}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="newEmail">Email</label>
+                <input
+                  type="email"
+                  id="newEmail"
+                  name="email"
+                  value={newUserData.email}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="newPassword">Password</label>
+                <input
+                  type="password"
+                  id="newPassword"
+                  name="password"
+                  value={newUserData.password}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="newPhone">Phone</label>
+                <input
+                  type="text"
+                  id="newPhone"
+                  name="phone"
+                  value={newUserData.phone}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="newApartmentNumber">Apartment Number</label>
+                <input
+                  type="text"
+                  id="newApartmentNumber"
+                  name="apartmentNumber"
+                  value={newUserData.apartmentNumber}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group checkbox-group">
+                <input
+                  type="checkbox"
+                  id="newIsAdmin"
+                  name="isAdmin"
+                  checked={newUserData.isAdmin}
+                  onChange={handleCheckboxChange}
+                />
+                <label htmlFor="newIsAdmin">Is Admin</label>
+              </div>
+              <div className="dialog-actions">
+                <button type="submit">Add Member</button>
+                <button type="button" className="secondary-button" onClick={() => setShowAddUserForm(false)}>
+                  Close
+                </button>
+              </div>
+            </form>
           </div>
-          <div className="form-group">
-            <label htmlFor="newEmail">Email</label>
-            <input
-              type="email"
-              id="newEmail"
-              name="email"
-              value={newUserData.email}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="newPassword">Password</label>
-            <input
-              type="password"
-              id="newPassword"
-              name="password"
-              value={newUserData.password}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="newPhone">Phone</label>
-            <input
-              type="text"
-              id="newPhone"
-              name="phone"
-              value={newUserData.phone}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="newApartmentNumber">Apartment Number</label>
-            <input
-              type="text"
-              id="newApartmentNumber"
-              name="apartmentNumber"
-              value={newUserData.apartmentNumber}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div className="form-group checkbox-group">
-            <input
-              type="checkbox"
-              id="newIsAdmin"
-              name="isAdmin"
-              checked={newUserData.isAdmin}
-              onChange={handleCheckboxChange}
-            />
-            <label htmlFor="newIsAdmin">Is Admin</label>
-          </div>
-          <button type="submit">Add Member</button>
-        </form>
+        </div>
       )}
 
       <ul className="user-list">
         {users.map((user) => (
           <li key={user._id}>
             <span>{user.name} ({user.email}) - Apt: {user.apartmentNumber} {user.isAdmin && ' (Admin)'}</span>
-            <button onClick={() => handleDeleteUser(user._id)}>Delete</button>
+            <button className="member-delete-button" onClick={() => handleDeleteUser(user._id)}>Delete</button>
           </li>
         ))}
       </ul>

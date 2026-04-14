@@ -252,7 +252,14 @@ function AdminDashboardPage() {
     }
   };
 
-  if (loading) return <div>Loading admin dashboard...</div>;
+  if (loading) {
+    return (
+      <div className="page-loader">
+        <span className="page-loader-spinner" />
+        <p>Loading admin dashboard...</p>
+      </div>
+    );
+  }
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -277,49 +284,58 @@ function AdminDashboardPage() {
             </button>
 
             {showAddPaymentForm && (
-              <form onSubmit={handleAddPayment} className="payment-creation-form">
-                <h3>Create New Payment</h3>
-                <div className="form-group">
-                  <label htmlFor="amount">Amount (₹)</label>
-                  <input
-                    type="number"
-                    id="amount"
-                    name="amount"
-                    value={newPaymentData.amount}
-                    onChange={handlePaymentInputChange}
-                    required
-                  />
+              <div className="dialog-overlay" onClick={() => setShowAddPaymentForm(false)}>
+                <div className="dialog-card" onClick={(e) => e.stopPropagation()}>
+                  <form onSubmit={handleAddPayment} className="payment-creation-form">
+                    <h3>Create New Payment</h3>
+                    <div className="form-group">
+                      <label htmlFor="amount">Amount (₹)</label>
+                      <input
+                        type="number"
+                        id="amount"
+                        name="amount"
+                        value={newPaymentData.amount}
+                        onChange={handlePaymentInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="dueDate">Due Date</label>
+                      <input
+                        type="date"
+                        id="dueDate"
+                        name="dueDate"
+                        value={newPaymentData.dueDate}
+                        onChange={handlePaymentInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="members">Select Members (Optional - leave blank for all)</label>
+                      <select
+                        id="members"
+                        name="selectedMembers"
+                        multiple
+                        value={newPaymentData.selectedMembers}
+                        onChange={handleMemberSelectChange}
+                        className="multi-select"
+                      >
+                        {allUsers.map((user) => (
+                          <option key={user._id} value={user._id}>
+                            {user.name} ({user.apartmentNumber})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="dialog-actions">
+                      <button type="submit">Create Payments</button>
+                      <button type="button" className="secondary-button" onClick={() => setShowAddPaymentForm(false)}>
+                        Close
+                      </button>
+                    </div>
+                  </form>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="dueDate">Due Date</label>
-                  <input
-                    type="date"
-                    id="dueDate"
-                    name="dueDate"
-                    value={newPaymentData.dueDate}
-                    onChange={handlePaymentInputChange}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="members">Select Members (Optional - leave blank for all)</label>
-                  <select
-                    id="members"
-                    name="selectedMembers"
-                    multiple
-                    value={newPaymentData.selectedMembers}
-                    onChange={handleMemberSelectChange}
-                    className="multi-select"
-                  >
-                    {allUsers.map((user) => (
-                      <option key={user._id} value={user._id}>
-                        {user.name} ({user.apartmentNumber})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button type="submit">Create Payments</button>
-              </form>
+              </div>
             )}
 
             {payments.length === 0 ? (
@@ -380,51 +396,60 @@ function AdminDashboardPage() {
             </button>
 
             {showAddAnnouncementForm && (
-              <form onSubmit={handleAddAnnouncement} className="announcement-form">
-                <h3>Add New Announcement</h3>
-                <div className="form-group">
-                  <label htmlFor="newAnnouncementTitle">Title</label>
-                  <input
-                    type="text"
-                    id="newAnnouncementTitle"
-                    name="title"
-                    value={newAnnouncementData.title}
-                    onChange={handleAnnouncementInputChange}
-                    required
-                  />
+              <div className="dialog-overlay" onClick={() => setShowAddAnnouncementForm(false)}>
+                <div className="dialog-card" onClick={(e) => e.stopPropagation()}>
+                  <form onSubmit={handleAddAnnouncement} className="announcement-form">
+                    <h3>Add New Announcement</h3>
+                    <div className="form-group">
+                      <label htmlFor="newAnnouncementTitle">Title</label>
+                      <input
+                        type="text"
+                        id="newAnnouncementTitle"
+                        name="title"
+                        value={newAnnouncementData.title}
+                        onChange={handleAnnouncementInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="newAnnouncementContent">Content</label>
+                      <textarea
+                        id="newAnnouncementContent"
+                        name="content"
+                        value={newAnnouncementData.content}
+                        onChange={handleAnnouncementInputChange}
+                        required
+                      ></textarea>
+                    </div>
+                    <div className="form-group checkbox-group">
+                      <input
+                        type="checkbox"
+                        id="sendEmail"
+                        name="sendEmail"
+                        checked={newAnnouncementData.sendEmail}
+                        onChange={handleAnnouncementCheckboxChange}
+                      />
+                      <label htmlFor="sendEmail">Send Email Notification</label>
+                    </div>
+                    <div className="form-group checkbox-group">
+                      <input
+                        type="checkbox"
+                        id="sendSMS"
+                        name="sendSMS"
+                        checked={newAnnouncementData.sendSMS}
+                        onChange={handleAnnouncementCheckboxChange}
+                      />
+                      <label htmlFor="sendSMS">Send SMS Notification</label>
+                    </div>
+                    <div className="dialog-actions">
+                      <button type="submit">Add Announcement</button>
+                      <button type="button" className="secondary-button" onClick={() => setShowAddAnnouncementForm(false)}>
+                        Close
+                      </button>
+                    </div>
+                  </form>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="newAnnouncementContent">Content</label>
-                  <textarea
-                    id="newAnnouncementContent"
-                    name="content"
-                    value={newAnnouncementData.content}
-                    onChange={handleAnnouncementInputChange}
-                    required
-                  ></textarea>
-                </div>
-                <div className="form-group checkbox-group">
-                  <input
-                    type="checkbox"
-                    id="sendEmail"
-                    name="sendEmail"
-                    checked={newAnnouncementData.sendEmail}
-                    onChange={handleAnnouncementCheckboxChange}
-                  />
-                  <label htmlFor="sendEmail">Send Email Notification</label>
-                </div>
-                <div className="form-group checkbox-group">
-                  <input
-                    type="checkbox"
-                    id="sendSMS"
-                    name="sendSMS"
-                    checked={newAnnouncementData.sendSMS}
-                    onChange={handleAnnouncementCheckboxChange}
-                  />
-                  <label htmlFor="sendSMS">Send SMS Notification</label>
-                </div>
-                <button type="submit">Add Announcement</button>
-              </form>
+              </div>
             )}
 
             {announcements.length === 0 ? (

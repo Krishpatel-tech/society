@@ -65,12 +65,36 @@ function MaintenancePage() {
       fetchPayments();
   };
 
-  if (loading) return <div>Loading payments...</div>;
+  if (loading) {
+    return (
+      <div className="page-loader">
+        <span className="page-loader-spinner" />
+        <p>Loading payments...</p>
+      </div>
+    );
+  }
   if (error) return <div>Error: {error}</div>;
+
+  const paidCount = payments.filter((payment) => payment.isPaid).length;
+  const unpaidCount = payments.length - paidCount;
 
   return (
     <div className="maintenance-container">
       <h1>My Maintenance Payments</h1>
+      <div className="payment-summary">
+        <div className="summary-card">
+          <span>Total Bills</span>
+          <strong>{payments.length}</strong>
+        </div>
+        <div className="summary-card">
+          <span>Paid</span>
+          <strong>{paidCount}</strong>
+        </div>
+        <div className="summary-card">
+          <span>Pending</span>
+          <strong>{unpaidCount}</strong>
+        </div>
+      </div>
       {payments.length === 0 ? (
         <p>No maintenance payments found.</p>
       ) : (
@@ -79,7 +103,12 @@ function MaintenancePage() {
             <li key={payment._id} className={payment.isPaid ? 'paid' : 'unpaid'}>
               <p>Amount: ₹{payment.amount}</p>
               <p>Due Date: {new Date(payment.dueDate).toLocaleDateString()}</p>
-              <p>Status: {payment.isPaid ? 'Paid' : 'Unpaid'}</p>
+              <p>
+                Status:{' '}
+                <span className={`status-badge ${payment.isPaid ? 'status-paid' : 'status-unpaid'}`}>
+                  {payment.isPaid ? 'Paid' : 'Unpaid'}
+                </span>
+              </p>
               {!payment.isPaid && (
                 <button onClick={() => handlePayClick(payment)}>Pay Now</button>
               )}
