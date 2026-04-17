@@ -78,11 +78,25 @@ label {
 }
 
 .nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   color: white;
   font-size: 1.8em;
   font-weight: 700;
   text-decoration: none;
   letter-spacing: 0.5px;
+}
+
+.nav-brand span {
+  color: #ffffff;
+}
+
+.nav-logo {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 7px;
 }
 
 .nav-links {
@@ -201,6 +215,89 @@ h1, h2, h3 {
   color: var(--text-color);
   margin-bottom: 20px;
   font-weight: 600;
+}
+
+.home-container {
+  max-width: 980px;
+  margin: 40px auto;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(91, 108, 255, 0.14);
+  border-radius: 16px;
+  box-shadow: var(--shadow-light);
+}
+
+body.dark-theme .home-container {
+  background: rgba(17, 26, 47, 0.9);
+  border-color: rgba(127, 139, 255, 0.28);
+}
+
+body.dark-theme .home-container h1,
+body.dark-theme .home-container h2,
+body.dark-theme .home-container p {
+  color: #e2e8f0;
+}
+
+.society-gallery-section {
+  margin-top: 24px;
+}
+
+.society-slider {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  height: 360px;
+  margin: 0 auto;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
+}
+
+.society-slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  opacity: 0;
+  transition: opacity 0.8s ease-in-out;
+}
+
+.society-slide.active {
+  opacity: 1;
+}
+
+.society-slider-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.society-slider-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: none;
+  margin: 0;
+  padding: 0;
+  background: rgba(91, 108, 255, 0.35);
+  cursor: pointer;
+}
+
+.society-slider-dot.active {
+  width: 26px;
+  background: var(--primary-color);
+}
+
+body.dark-theme .society-slider-dot {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+body.dark-theme .society-slider-dot.active {
+  background: #8ea0ff;
 }
 
 /* Containers and Cards */
@@ -984,6 +1081,11 @@ body.dark-theme .dialog-card {
     font-size: 1.25rem;
   }
 
+  .nav-logo {
+    width: 28px;
+    height: 28px;
+  }
+
   .nav-links {
     width: 100%;
     flex-wrap: wrap;
@@ -1077,6 +1179,10 @@ body.dark-theme .dialog-card {
 
   .payment-summary {
     grid-template-columns: 1fr;
+  }
+
+  .society-slider {
+    height: 230px;
   }
 
   .form-group input[type="text"],
