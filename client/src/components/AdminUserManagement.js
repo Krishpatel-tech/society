@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { useUX } from '../context/UXContext';
 
 function AdminUserManagement() {
   const [users, setUsers] = useState([]);
@@ -15,8 +16,10 @@ function AdminUserManagement() {
     apartmentNumber: '',
     isAdmin: false,
   });
+  const [isSaving, setIsSaving] = useState(false);
+  const { notify, track } = useUX();
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -31,15 +34,18 @@ function AdminUserManagement() {
       const res = await axios.get('/api/users', config);
       setUsers(res.data);
       setLoading(false);
+      setError(null);
+      track('admin_member_list_loaded', { count: res.data.length });
     } catch (err) {
       setError(err.message);
       setLoading(false);
+      track('admin_member_list_error', { message: err.message });
     }
-  };
+  }, [track]);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   const handleInputChange = (e) => {
     if (e.target.name === 'apartmentNumber' && apartmentError) {
@@ -55,6 +61,7 @@ function AdminUserManagement() {
   const handleAddUser = async (e) => {
     e.preventDefault();
     setApartmentError('');
+    setIsSaving(true);
     try {
       const token = localStorage.getItem('token');
       const config = {
@@ -64,7 +71,8 @@ function AdminUserManagement() {
         },
       };
       await axios.post('/api/auth/register', newUserData, config);
-      alert('User added successfully!');
+      notify('Member added successfully.', 'success');
+      track('admin_member_added');
       setShowAddUserForm(false);
       setNewUserData({
         name: '',
@@ -82,27 +90,29 @@ function AdminUserManagement() {
       if (errorCode === 'APARTMENT_EXISTS') {
         setApartmentError(errorMsg);
       } else {
-        alert('Error adding user: ' + errorMsg);
+        notify(`Error adding user: ${errorMsg}`, 'error');
       }
+      track('admin_member_add_error', { code: errorCode || 'unknown' });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDeleteUser = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        const token = localStorage.getItem('token');
-        const config = {
-          headers: {
-            'x-auth-token': token,
-          },
-        };
-        await axios.delete(`/api/users/${userId}`, config);
-        alert('User deleted successfully!');
-        fetchUsers(); // Refresh the user list
-      } catch (err) {
-        console.error(err.response?.data?.msg || err.message);
-        alert('Error deleting user: ' + (err.response?.data?.msg || err.message));
-      }
+    try {
+      const token = localStorage.getItem('token');
+      const config = {
+        headers: {
+          'x-auth-token': token,
+        },
+      };
+      await axios.delete(`/api/users/${userId}`, config);
+      notify('User deleted successfully.', 'success');
+      track('admin_member_deleted', { userId });
+      fetchUsers();
+    } catch (err) {
+      console.error(err.response?.data?.msg || err.message);
+      notify(`Error deleting user: ${err.response?.data?.msg || err.message}`, 'error');
     }
   };
 
@@ -187,7 +197,7 @@ function AdminUserManagement() {
                 <label htmlFor="newIsAdmin">Is Admin</label>
               </div>
               <div className="dialog-actions">
-                <button type="submit">Add Member</button>
+                <button type="submit" disabled={isSaving}>{isSaving ? 'Saving...' : 'Add Member'}</button>
                 <button type="button" className="secondary-button" onClick={() => setShowAddUserForm(false)}>
                   Close
                 </button>
@@ -200,7 +210,7 @@ function AdminUserManagement() {
       <ul className="user-list">
         {users.map((user) => (
           <li key={user._id}>
-            <span>{user.name} ({user.email}) - Apt: {user.apartmentNumber} {user.isAdmin && ' (Admin)'}</span>
+            <span className="member-primary-text">{user.name} ({user.email}) - Apt: {user.apartmentNumber} {user.isAdmin && ' (Admin)'}</span>
             <button className="member-delete-button" onClick={() => handleDeleteUser(user._id)}>Delete</button>
           </li>
         ))}

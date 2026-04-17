@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useUX } from '../context/UXContext';
 
 function ProfilePage() {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { track } = useUX();
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -23,16 +25,19 @@ function ProfilePage() {
         // The /api/auth endpoint returns the logged-in user's details
         const res = await axios.get('/api/auth', config);
         setUserProfile(res.data);
+        track('profile_loaded');
       } catch (err) {
         console.error(err.response?.data?.msg || err.message);
         setError('Failed to fetch user profile.');
+        track('profile_load_error', { message: err.message });
       } finally {
         setLoading(false);
       }
     };
 
     fetchUserProfile();
-  }, []);
+
+  }, [track]);
 
   if (loading) return <div className="profile-container">Loading profile...</div>;
   if (error) return <div className="profile-container error-message">Error: {error}</div>;

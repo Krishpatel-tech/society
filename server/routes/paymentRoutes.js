@@ -9,6 +9,107 @@ const router = express.Router();
 
 const UPI_QR_IMAGE_URL = process.env.UPI_QR_IMAGE_URL || '';
 const UPI_ID = process.env.UPI_ID || '';
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'society@kamaxitriplex.com';
+const SUPPORT_PHONE = process.env.SUPPORT_PHONE || '+91 98765 43210';
+
+const buildMaintenanceIssuedEmail = ({ user, amount, dueDate }) => `
+  <div style="font-family: Arial, sans-serif; background:#f8fafc; padding:20px; color:#111827;">
+    <div style="max-width:640px; margin:0 auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+      <div style="background:#1e3a8a; color:#ffffff; padding:16px 20px;">
+        <h2 style="margin:0; font-size:18px;">Maintenance Payment Notice</h2>
+      </div>
+      <div style="padding:20px;">
+        <p style="margin-top:0;">Dear <strong>${user.name}</strong>,</p>
+        <p>A new maintenance invoice has been generated for your apartment.</p>
+        <table style="width:100%; border-collapse:collapse; margin:14px 0;">
+          <tr>
+            <td style="padding:8px; border:1px solid #e5e7eb;"><strong>Apartment</strong></td>
+            <td style="padding:8px; border:1px solid #e5e7eb;">${user.apartmentNumber}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px; border:1px solid #e5e7eb;"><strong>Amount Due</strong></td>
+            <td style="padding:8px; border:1px solid #e5e7eb;">INR ${Number(amount).toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px; border:1px solid #e5e7eb;"><strong>Due Date</strong></td>
+            <td style="padding:8px; border:1px solid #e5e7eb;">${new Date(dueDate).toLocaleDateString()}</td>
+          </tr>
+        </table>
+        <p>Please find the invoice attached and complete payment through the society portal before the due date.</p>
+        <p style="margin-bottom:0;">Regards,<br/><strong>KAMAXI TRIPLEX Society Management</strong></p>
+      </div>
+      <div style="background:#f3f4f6; padding:12px 20px; font-size:12px; color:#4b5563;">
+        Support: ${SUPPORT_EMAIL} | ${SUPPORT_PHONE}
+      </div>
+    </div>
+  </div>
+`;
+
+const buildPaymentApprovedEmail = ({ user, payment }) => `
+  <div style="font-family: Arial, sans-serif; background:#f8fafc; padding:20px; color:#111827;">
+    <div style="max-width:640px; margin:0 auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+      <div style="background:#065f46; color:#ffffff; padding:16px 20px;">
+        <h2 style="margin:0; font-size:18px;">Payment Verification Confirmation</h2>
+      </div>
+      <div style="padding:20px;">
+        <p style="margin-top:0;">Dear <strong>${user.name}</strong>,</p>
+        <p>Your maintenance payment has been successfully verified.</p>
+        <table style="width:100%; border-collapse:collapse; margin:14px 0;">
+          <tr>
+            <td style="padding:8px; border:1px solid #e5e7eb;"><strong>Apartment</strong></td>
+            <td style="padding:8px; border:1px solid #e5e7eb;">${user.apartmentNumber}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px; border:1px solid #e5e7eb;"><strong>Amount Paid</strong></td>
+            <td style="padding:8px; border:1px solid #e5e7eb;">INR ${Number(payment.amount).toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px; border:1px solid #e5e7eb;"><strong>UTR / Reference</strong></td>
+            <td style="padding:8px; border:1px solid #e5e7eb;">${payment.utr || 'N/A'}</td>
+          </tr>
+        </table>
+        <p>Thank you for your timely payment.</p>
+        <p style="margin-bottom:0;">Regards,<br/><strong>KAMAXI TRIPLEX Society Management</strong></p>
+      </div>
+      <div style="background:#f3f4f6; padding:12px 20px; font-size:12px; color:#4b5563;">
+        Support: ${SUPPORT_EMAIL} | ${SUPPORT_PHONE}
+      </div>
+    </div>
+  </div>
+`;
+
+const buildPaymentReminderEmail = ({ user, payment }) => `
+  <div style="font-family: Arial, sans-serif; background:#f8fafc; padding:20px; color:#111827;">
+    <div style="max-width:640px; margin:0 auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+      <div style="background:#7c2d12; color:#ffffff; padding:16px 20px;">
+        <h2 style="margin:0; font-size:18px;">Payment Reminder</h2>
+      </div>
+      <div style="padding:20px;">
+        <p style="margin-top:0;">Dear <strong>${user.name}</strong>,</p>
+        <p>This is a reminder for your pending society maintenance payment.</p>
+        <table style="width:100%; border-collapse:collapse; margin:14px 0;">
+          <tr>
+            <td style="padding:8px; border:1px solid #e5e7eb;"><strong>Apartment</strong></td>
+            <td style="padding:8px; border:1px solid #e5e7eb;">${user.apartmentNumber}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px; border:1px solid #e5e7eb;"><strong>Amount Due</strong></td>
+            <td style="padding:8px; border:1px solid #e5e7eb;">INR ${Number(payment.amount).toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px; border:1px solid #e5e7eb;"><strong>Due Date</strong></td>
+            <td style="padding:8px; border:1px solid #e5e7eb;">${new Date(payment.dueDate).toLocaleDateString()}</td>
+          </tr>
+        </table>
+        <p>Please complete payment at the earliest through the society portal.</p>
+        <p style="margin-bottom:0;">Regards,<br/><strong>KAMAXI TRIPLEX Society Management</strong></p>
+      </div>
+      <div style="background:#f3f4f6; padding:12px 20px; font-size:12px; color:#4b5563;">
+        Support: ${SUPPORT_EMAIL} | ${SUPPORT_PHONE}
+      </div>
+    </div>
+  </div>
+`;
 
 const serializePayment = (paymentDoc) => {
   const payment = paymentDoc.toObject ? paymentDoc.toObject() : paymentDoc;
@@ -68,16 +169,7 @@ router.post('/batch', auth, auth.admin, async (req, res) => {
       if (paymentDetail) {
         // Generate PDF invoice
         generateInvoicePdf(paymentDetail, user, async (pdfBuffer) => {
-          const emailContent = `Dear ${user.name},\n
-        
-          A new maintenance payment of ₹${amount} has been issued for your apartment (Apt: ${user.apartmentNumber}).\n
-          It is due on ${new Date(dueDate).toLocaleDateString()}.\n
-          Please find your invoice attached.\n
-          
-          Please log in to the society portal to view details and make your payment.\n 
-          
-          Regards,\n
-          KAMAXI TRIPLEX Society Management`;
+          const emailContent = buildMaintenanceIssuedEmail({ user, amount, dueDate });
 
           const attachments = [
             {
@@ -234,7 +326,7 @@ router.put('/:id/verify', auth, auth.admin, async (req, res) => {
       await sendEmail({
         email: payment.user.email,
         subject: 'Maintenance Payment Received Successfully',
-        message: `Dear ${payment.user.name},<br/><br/>We have successfully verified your maintenance payment of ₹${payment.amount} for apartment ${payment.user.apartmentNumber}.<br/>UTR: ${payment.utr || 'N/A'}<br/><br/>Thank you.<br/>KAMAXI TRIPLEX Society Management`,
+        message: buildPaymentApprovedEmail({ user: payment.user, payment }),
       });
     } else {
       payment.status = 'PENDING';
@@ -324,14 +416,7 @@ router.post('/remind/:id', auth, auth.admin, async (req, res) => {
     }
 
     const user = payment.user;
-    const reminderEmailContent = `Dear ${user.name},
-    
-    This is a friendly reminder that your maintenance payment of ₹${payment.amount} for apartment (Apt: ${user.apartmentNumber}) is due on ${new Date(payment.dueDate).toLocaleDateString()}.
-    
-    Please log in to the society portal to view details and make your payment.
-    
-    Regards,
-    KAMAXI TRIPLEX Society Management`;
+    const reminderEmailContent = buildPaymentReminderEmail({ user, payment });
 
     await sendEmail({
       email: user.email,

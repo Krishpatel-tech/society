@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { useUX } from '../context/UXContext';
 
 function MaintenancePage() {
   const MAX_PROOF_FILE_SIZE_BYTES = 4 * 1024 * 1024; // 4 MB
@@ -12,8 +13,10 @@ function MaintenancePage() {
   const [proofData, setProofData] = useState({ utr: '', proofImageUrl: '' });
   const [proofError, setProofError] = useState('');
   const [submittingProof, setSubmittingProof] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const { notify, track } = useUX();
 
-  const fetchPayments = async () => {
+  const fetchPayments = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -27,14 +30,18 @@ function MaintenancePage() {
       };
       const res = await axios.get('/api/payments/my', config);
       setPayments(res.data);
+      setLastUpdated(new Date());
       setLoading(false);
+      setError(null);
+      track('payments_fetch_success', { count: res.data.length });
     } catch (err) {
       setError(err.message);
       setLoading(false);
+      track('payments_fetch_error', { message: err.message });
     }
-  };
+  }, [track]);
 
-  const fetchQrConfig = async () => {
+  const fetchQrConfig = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
@@ -45,21 +52,24 @@ function MaintenancePage() {
       };
       const res = await axios.get('/api/payments/qr-config', config);
       setQrConfig(res.data);
+      track('payments_qr_fetch_success');
     } catch (err) {
       console.error('Error fetching UPI QR config:', err);
+      track('payments_qr_fetch_error', { message: err.message });
     }
-  };
+  }, [track]);
 
   useEffect(() => {
     fetchPayments();
     fetchQrConfig();
-  }, []);
+  }, [fetchPayments, fetchQrConfig]);
 
   const handlePayClick = (payment) => {
     setSelectedPayment(payment);
     setShowPaymentForm(true);
     setProofData({ utr: '', proofImageUrl: '' });
     setProofError('');
+    track('payments_proof_modal_opened', { paymentId: payment._id });
   };
 
   const handleProofInputChange = (e) => {
@@ -75,6 +85,7 @@ function MaintenancePage() {
     if (file.size > MAX_PROOF_FILE_SIZE_BYTES) {
       setProofError('Screenshot is too large. Please upload an image under 4 MB.');
       setProofData((prev) => ({ ...prev, proofImageUrl: '' }));
+      track('payments_proof_upload_rejected_size');
       return;
     }
 
@@ -95,6 +106,7 @@ function MaintenancePage() {
 
     if (!proofData.utr.trim() || !proofData.proofImageUrl) {
       setProofError('Please provide both UTR and screenshot.');
+      track('payments_proof_submit_blocked');
       return;
     }
 
@@ -119,7 +131,8 @@ function MaintenancePage() {
         config
       );
 
-      alert('Payment proof submitted successfully. Awaiting admin verification.');
+      notify('Payment proof submitted. Admin verification usually completes within 24 hours.', 'success');
+      track('payments_proof_submit_success', { paymentId: selectedPayment._id });
       setShowPaymentForm(false);
       setSelectedPayment(null);
       fetchPayments();
@@ -129,9 +142,21 @@ function MaintenancePage() {
       } else {
         setProofError(err.response?.data?.msg || err.message || 'Failed to submit proof.');
       }
+      track('payments_proof_submit_error', { status: err.response?.status || 0 });
     } finally {
       setSubmittingProof(false);
     }
+  };
+
+  const getUrgency = (dueDate) => {
+    const msInDay = 1000 * 60 * 60 * 24;
+    const dueTime = new Date(dueDate).setHours(0, 0, 0, 0);
+    const today = new Date().setHours(0, 0, 0, 0);
+    const dayDiff = Math.ceil((dueTime - today) / msInDay);
+
+    if (dayDiff < 0) return 'Overdue';
+    if (dayDiff <= 3) return 'Due Soon';
+    return 'Upcoming';
   };
 
   if (loading) {
@@ -142,7 +167,15 @@ function MaintenancePage() {
       </div>
     );
   }
-  if (error) return <div>Error: {error}</div>;
+  if (error) {
+    return (
+      <div className="maintenance-container">
+        <h1>My Maintenance Payments</h1>
+        <p className="error-message">Unable to load payments right now.</p>
+        <button type="button" onClick={fetchPayments}>Retry</button>
+      </div>
+    );
+  }
 
   const paidCount = payments.filter((payment) => payment.isPaid).length;
   const unpaidCount = payments.length - paidCount;
@@ -150,6 +183,12 @@ function MaintenancePage() {
   return (
     <div className="maintenance-container">
       <h1>My Maintenance Payments</h1>
+      <div className="section-meta-row">
+        <p className="section-updated-at">
+          Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : 'Not available'}
+        </p>
+        <button type="button" className="secondary-button" onClick={fetchPayments}>Refresh</button>
+      </div>
       <div className="payment-summary">
         <div className="summary-card">
           <span>Total Bills</span>
@@ -172,6 +211,17 @@ function MaintenancePage() {
             <li key={payment._id} className={payment.isPaid ? 'paid' : 'unpaid'}>
               <p>Amount: ₹{payment.amount}</p>
               <p>Due Date: {new Date(payment.dueDate).toLocaleDateString()}</p>
+              {!payment.isPaid && (
+                <p>
+                  Urgency:{' '}
+                  <span className={`status-badge urgency-${getUrgency(payment.dueDate).toLowerCase().replace(' ', '-')}`}>
+                    {getUrgency(payment.dueDate)}
+                  </span>
+                </p>
+              )}
+              <p className="payment-progress">
+                {payment.status === 'PAID' ? 'Pending -> Proof Submitted -> Verified' : payment.status === 'AWAITING_VERIFICATION' ? 'Pending -> Proof Submitted -> Verifying' : 'Pending -> Submit Proof -> Verification'}
+              </p>
               <p>
                 Status:{' '}
                 <span className={`status-badge ${payment.status === 'PAID' ? 'status-paid' : 'status-unpaid'}`}>
@@ -199,6 +249,7 @@ function MaintenancePage() {
             <p>UPI QR is not configured yet. Please contact admin.</p>
           )}
           <form onSubmit={handleSubmitProof} className="payment-proof-form">
+            <p className="form-hint">Upload JPG/PNG screenshot under 4 MB for faster verification.</p>
             <div className="form-group">
               <label htmlFor="utr">UTR / Reference Number</label>
               <input
@@ -231,7 +282,7 @@ function MaintenancePage() {
               {submittingProof ? 'Submitting...' : 'Submit Proof'}
             </button>
           </form>
-          <button onClick={() => setShowPaymentForm(false)}>Cancel</button>
+          <button type="button" onClick={() => setShowPaymentForm(false)} className="secondary-button">Cancel</button>
         </div>
       )}
     </div>
