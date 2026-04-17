@@ -1,64 +1,137 @@
 const PDFDocument = require('pdfkit');
 
 function generateInvoicePdf(payment, user, callback) {
-  const doc = new PDFDocument({ margin: 50 });
+  const doc = new PDFDocument({ margin: 44, size: 'A4' });
 
-  let buffers = [];
+  const buffers = [];
   doc.on('data', buffers.push.bind(buffers));
   doc.on('end', () => {
-    let pdfData = Buffer.concat(buffers);
+    const pdfData = Buffer.concat(buffers);
     callback(pdfData);
   });
 
-  // Add Header
-  doc.fontSize(25).text('Maintenance Invoice', { align: 'center' });
-  doc.fontSize(10).text(`Invoice Date: ${new Date().toLocaleDateString()}`, { align: 'right' });
-  doc.moveDown();
+  const invoiceDate = new Date();
+  const dueDate = new Date(payment.dueDate);
+  const safeAmount = Number(payment.amount || 0);
+  const invoiceNo = `INV-${String(payment._id).slice(-8).toUpperCase()}`;
+  const primaryColor = '#1E3A8A';
+  const mutedColor = '#6B7280';
+  const borderColor = '#D1D5DB';
 
-  // Add Society Details
-  doc.fontSize(12).text('KAMAXI TRIPLEX');
-  doc.text('Opp. Motnath Mahadev, Harni road');
-  doc.text('Vadodara, Gujarat, 390022'); // Replace with actual society address
-  doc.moveDown();
+  doc
+    .rect(0, 0, doc.page.width, 106)
+    .fill('#EEF2FF');
 
-  // Add Member Details
-  doc.fontSize(12).text(`Bill To: ${user.name}`);
-  doc.text(`Apartment: ${user.apartmentNumber}`);
-  doc.text(`Email: ${user.email}`);
-  doc.text(`Phone: ${user.phone || 'N/A'}`);
-  doc.moveDown();
+  doc
+    .fillColor(primaryColor)
+    .fontSize(24)
+    .text('MAINTENANCE INVOICE', 44, 40, { align: 'left' });
 
-  // Add Payment Details Table
-  doc.fontSize(15).text('Payment Details:');
-  doc.moveDown(0.5);
+  doc
+    .fillColor('#111827')
+    .fontSize(11)
+    .text('KAMAXI TRIPLEX Society Management', 44, 78, { align: 'left' });
 
-  const tableTop = doc.y;
-  const itemX = 50;
-  const descriptionX = 150;
-  const amountX = 400;
+  doc
+    .fontSize(10)
+    .fillColor('#374151')
+    .text(`Invoice No: ${invoiceNo}`, 350, 44, { width: 200, align: 'right' })
+    .text(`Invoice Date: ${invoiceDate.toLocaleDateString()}`, 350, 60, { width: 200, align: 'right' })
+    .text(`Due Date: ${dueDate.toLocaleDateString()}`, 350, 76, { width: 200, align: 'right' });
 
-  doc.fontSize(12)
-    .text('Description', descriptionX, tableTop, { bold: true })
-    .text('Amount', amountX, tableTop, { bold: true });
+  doc.moveDown(2.6);
 
-  doc.moveTo(itemX, tableTop + 20)
-    .lineTo(550, tableTop + 20)
+  const sectionTop = 136;
+  doc
+    .lineWidth(1)
+    .strokeColor(borderColor)
+    .roundedRect(44, sectionTop, 250, 94, 6)
+    .stroke();
+  doc
+    .roundedRect(306, sectionTop, 250, 94, 6)
     .stroke();
 
-  const paymentY = tableTop + 30;
-  doc.fontSize(10)
-    .text(`Maintenance Fee for ${new Date(payment.dueDate).toLocaleDateString()}`, descriptionX, paymentY)
-    .text(`₹${payment.amount.toFixed(2)}`, amountX, paymentY);
+  doc
+    .fontSize(11)
+    .fillColor(primaryColor)
+    .text('Billed By', 58, sectionTop + 14)
+    .fillColor('#111827')
+    .fontSize(10)
+    .text('KAMAXI TRIPLEX', 58, sectionTop + 34)
+    .fillColor(mutedColor)
+    .text('Opp. Motnath Mahadev, Harni Road', 58, sectionTop + 50)
+    .text('Vadodara, Gujarat - 390022', 58, sectionTop + 64);
 
-  doc.moveDown();
-  doc.moveDown();
+  doc
+    .fontSize(11)
+    .fillColor(primaryColor)
+    .text('Billed To', 320, sectionTop + 14)
+    .fillColor('#111827')
+    .fontSize(10)
+    .text(user.name || 'Resident', 320, sectionTop + 34)
+    .fillColor(mutedColor)
+    .text(`Apartment: ${user.apartmentNumber || 'N/A'}`, 320, sectionTop + 50)
+    .text(`Email: ${user.email || 'N/A'}`, 320, sectionTop + 64)
+    .text(`Phone: ${user.phone || 'N/A'}`, 320, sectionTop + 78);
 
-  // Total
-  doc.fontSize(12).text(`Total Due: ₹${payment.amount.toFixed(2)}`, 400, doc.y, { bold: true });
-  doc.moveDown();
+  const tableTop = 258;
+  const col1X = 60;
+  const col2X = 370;
+  const col3X = 470;
 
-  // Footer
-  doc.fontSize(10).text('Thank you for your timely payment.', { align: 'center' });
+  doc
+    .lineWidth(1)
+    .fillColor('#F3F4F6')
+    .rect(44, tableTop, 512, 28)
+    .fill();
+
+  doc
+    .fillColor('#111827')
+    .fontSize(10)
+    .text('Description', col1X, tableTop + 9)
+    .text('Due Date', col2X, tableTop + 9)
+    .text('Amount', col3X, tableTop + 9, { width: 70, align: 'right' });
+
+  const rowTop = tableTop + 28;
+  doc
+    .lineWidth(1)
+    .strokeColor(borderColor)
+    .rect(44, rowTop, 512, 34)
+    .stroke();
+
+  doc
+    .fillColor('#111827')
+    .fontSize(10)
+    .text('Monthly Society Maintenance', col1X, rowTop + 11)
+    .text(dueDate.toLocaleDateString(), col2X, rowTop + 11)
+    .text(`INR ${safeAmount.toFixed(2)}`, col3X, rowTop + 11, { width: 70, align: 'right' });
+
+  const totalTop = rowTop + 50;
+  doc
+    .lineWidth(1)
+    .strokeColor(borderColor)
+    .rect(334, totalTop, 222, 38)
+    .stroke();
+
+  doc
+    .fillColor(primaryColor)
+    .fontSize(12)
+    .text('Total Due', 350, totalTop + 12)
+    .fontSize(14)
+    .text(`INR ${safeAmount.toFixed(2)}`, 440, totalTop + 10, { width: 100, align: 'right' });
+
+  const footerTop = totalTop + 74;
+  doc
+    .fontSize(10)
+    .fillColor(mutedColor)
+    .text(
+      'Please complete payment on or before the due date and retain this invoice for your records.',
+      44,
+      footerTop,
+      { width: 512, align: 'left' }
+    )
+    .moveDown(0.7)
+    .text('For support, contact: society@kamaxitriplex.com | +91 98765 43210');
 
   doc.end();
 }

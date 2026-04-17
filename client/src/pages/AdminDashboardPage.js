@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import AdminUserManagement from '../components/AdminUserManagement'; // Import new component
+import AdminUserManagement from '../components/AdminUserManagement';
+import { useUX } from '../context/UXContext';
 
 function AdminDashboardPage() {
   // const [users, setUsers] = useState([]); // User state moved to AdminUserManagement
@@ -33,8 +34,11 @@ function AdminDashboardPage() {
     amount: '',
     dueDate: '',
   });
+  const [paymentFilter, setPaymentFilter] = useState('all');
+  const [isSaving, setIsSaving] = useState(false);
+  const { notify, track } = useUX();
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -47,13 +51,14 @@ function AdminDashboardPage() {
       };
       const res = await axios.get('/api/users', config);
       setAllUsers(res.data);
+      track('admin_users_fetch_success', { count: res.data.length });
     } catch (err) {
       console.error('Error fetching users for payment form:', err);
-      // Optionally set an error state here
+      track('admin_users_fetch_error', { message: err.message });
     }
-  };
+  }, [track]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -75,18 +80,21 @@ function AdminDashboardPage() {
       setAnnouncements(announcementsRes.data);
 
       setLoading(false);
+      setError(null);
+      track('admin_dashboard_fetch_success', { payments: paymentsRes.data.length, announcements: announcementsRes.data.length });
     } catch (err) {
       setError(err.message);
       setLoading(false);
+      track('admin_dashboard_fetch_error', { message: err.message });
     }
-  };
+  }, [track]);
 
   useEffect(() => {
     fetchData();
     if (activeTab === 'payments' || activeTab === 'users') { // Fetch users when on payments or users tab
       fetchUsers(); 
     }
-  }, [activeTab]); // Refetch when tab changes for potentially updated data
+  }, [activeTab, fetchData, fetchUsers]); // Refetch when tab changes for potentially updated data
 
   const handlePaymentInputChange = (e) => {
     setNewPaymentData({ ...newPaymentData, [e.target.name]: e.target.value });
@@ -101,6 +109,7 @@ function AdminDashboardPage() {
 
   const handleAddPayment = async (e) => {
     e.preventDefault();
+    setIsSaving(true);
     try {
       const token = localStorage.getItem('token');
       const config = {
@@ -114,7 +123,8 @@ function AdminDashboardPage() {
       const data = { amount: parseFloat(amount), dueDate, memberIds: selectedMembers };
 
       await axios.post('/api/payments/batch', data, config);
-      alert('Payments created successfully!');
+      notify('Payments created successfully.', 'success');
+      track('admin_payment_batch_created', { selectedCount: selectedMembers.length || 'all' });
       setShowAddPaymentForm(false);
       setNewPaymentData({
         amount: '',
@@ -124,25 +134,26 @@ function AdminDashboardPage() {
       fetchData(); // Refresh all data including payments
     } catch (err) {
       console.error(err.response?.data?.msg || err.message);
-      alert('Error creating payments: ' + (err.response?.data?.msg || err.message));
+      notify(`Error creating payments: ${err.response?.data?.msg || err.message}`, 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleSendReminder = async (paymentId, userName) => {
-    if (window.confirm(`Are you sure you want to send a payment reminder to ${userName}?`)) {
-      try {
-        const token = localStorage.getItem('token');
-        const config = {
-          headers: {
-            'x-auth-token': token,
-          },
-        };
-        await axios.post(`/api/payments/remind/${paymentId}`, {}, config);
-        alert('Payment reminder sent successfully!');
-      } catch (err) {
-        console.error(err.response?.data?.msg || err.message);
-        alert('Error sending reminder: ' + (err.response?.data?.msg || err.message));
-      }
+    try {
+      const token = localStorage.getItem('token');
+      const config = {
+        headers: {
+          'x-auth-token': token,
+        },
+      };
+      await axios.post(`/api/payments/remind/${paymentId}`, {}, config);
+      notify(`Reminder sent to ${userName}.`, 'success');
+      track('admin_payment_reminder_sent', { paymentId });
+    } catch (err) {
+      console.error(err.response?.data?.msg || err.message);
+      notify(`Error sending reminder: ${err.response?.data?.msg || err.message}`, 'error');
     }
   };
 
@@ -166,12 +177,13 @@ function AdminDashboardPage() {
       };
       const { amount, dueDate } = editPaymentData;
       await axios.put(`/api/payments/${paymentId}`, { amount: parseFloat(amount), dueDate }, config);
-      alert('Payment updated successfully!');
+      notify('Payment updated successfully.', 'success');
+      track('admin_payment_updated', { paymentId });
       setEditingPaymentId(null);
       fetchData(); // Refresh payments list
     } catch (err) {
       console.error(err.response?.data?.msg || err.message);
-      alert('Error updating payment: ' + (err.response?.data?.msg || err.message));
+      notify(`Error updating payment: ${err.response?.data?.msg || err.message}`, 'error');
     }
   };
 
@@ -181,21 +193,20 @@ function AdminDashboardPage() {
   };
 
   const handleDeletePayment = async (paymentId) => {
-    if (window.confirm('Are you sure you want to delete this payment?')) {
-      try {
-        const token = localStorage.getItem('token');
-        const config = {
-          headers: {
-            'x-auth-token': token,
-          },
-        };
-        await axios.delete(`/api/payments/${paymentId}`, config);
-        alert('Payment deleted successfully!');
-        setPayments(payments.filter(payment => payment._id !== paymentId));
-      } catch (err) {
-        console.error(err.response?.data?.msg || err.message);
-        alert('Error deleting payment: ' + (err.response?.data?.msg || err.message));
-      }
+    try {
+      const token = localStorage.getItem('token');
+      const config = {
+        headers: {
+          'x-auth-token': token,
+        },
+      };
+      await axios.delete(`/api/payments/${paymentId}`, config);
+      notify('Payment deleted successfully.', 'success');
+      setPayments(payments.filter(payment => payment._id !== paymentId));
+      track('admin_payment_deleted', { paymentId });
+    } catch (err) {
+      console.error(err.response?.data?.msg || err.message);
+      notify(`Error deleting payment: ${err.response?.data?.msg || err.message}`, 'error');
     }
   };
 
@@ -209,11 +220,12 @@ function AdminDashboardPage() {
         },
       };
       await axios.put(`/api/payments/${paymentId}/verify`, { action }, config);
-      alert(action === 'approve' ? 'Payment marked as paid and user notified.' : 'Proof rejected and payment set back to pending.');
+      notify(action === 'approve' ? 'Payment marked as paid and user notified.' : 'Proof rejected and payment set back to pending.', action === 'approve' ? 'success' : 'info');
+      track('admin_payment_verification', { action, paymentId });
       fetchData();
     } catch (err) {
       console.error(err.response?.data?.msg || err.message);
-      alert('Error verifying payment: ' + (err.response?.data?.msg || err.message));
+      notify(`Error verifying payment: ${err.response?.data?.msg || err.message}`, 'error');
     }
   };
 
@@ -227,6 +239,7 @@ function AdminDashboardPage() {
 
   const handleAddAnnouncement = async (e) => {
     e.preventDefault();
+    setIsSaving(true);
     try {
       const token = localStorage.getItem('token');
       const config = {
@@ -236,7 +249,8 @@ function AdminDashboardPage() {
         },
       };
       await axios.post('/api/announcements', newAnnouncementData, config);
-      alert('Announcement added successfully!');
+      notify('Announcement added successfully.', 'success');
+      track('admin_announcement_added');
       setShowAddAnnouncementForm(false);
       setNewAnnouncementData({
         title: '',
@@ -247,26 +261,27 @@ function AdminDashboardPage() {
       fetchData(); // Refresh all data including announcements
     } catch (err) {
       console.error(err.response?.data?.msg || err.message);
-      alert('Error adding announcement: ' + (err.response?.data?.msg || err.message));
+      notify(`Error adding announcement: ${err.response?.data?.msg || err.message}`, 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDeleteAnnouncement = async (announcementId) => {
-    if (window.confirm('Are you sure you want to delete this announcement?')) {
-      try {
-        const token = localStorage.getItem('token');
-        const config = {
-          headers: {
-            'x-auth-token': token,
-          },
-        };
-        await axios.delete(`/api/announcements/${announcementId}`, config);
-        alert('Announcement deleted successfully!');
-        setAnnouncements(announcements.filter(announcement => announcement._id !== announcementId));
-      } catch (err) {
-        console.error(err.response?.data?.msg || err.message);
-        alert('Error deleting announcement: ' + (err.response?.data?.msg || err.message));
-      }
+    try {
+      const token = localStorage.getItem('token');
+      const config = {
+        headers: {
+          'x-auth-token': token,
+        },
+      };
+      await axios.delete(`/api/announcements/${announcementId}`, config);
+      notify('Announcement deleted successfully.', 'success');
+      setAnnouncements(announcements.filter(announcement => announcement._id !== announcementId));
+      track('admin_announcement_deleted', { announcementId });
+    } catch (err) {
+      console.error(err.response?.data?.msg || err.message);
+      notify(`Error deleting announcement: ${err.response?.data?.msg || err.message}`, 'error');
     }
   };
 
@@ -279,6 +294,13 @@ function AdminDashboardPage() {
     );
   }
   if (error) return <div>Error: {error}</div>;
+
+  const visiblePayments = payments.filter((payment) => {
+    if (paymentFilter === 'all') return true;
+    if (paymentFilter === 'awaiting') return payment.status === 'AWAITING_VERIFICATION';
+    if (paymentFilter === 'unpaid') return payment.status !== 'PAID';
+    return true;
+  });
 
   return (
     <div className="admin-dashboard-container">
@@ -297,6 +319,14 @@ function AdminDashboardPage() {
         {activeTab === 'payments' && (
           <div>
             <h2>Manage Payments</h2>
+            <div className="section-meta-row">
+              <label htmlFor="paymentFilter">Filter payments</label>
+              <select id="paymentFilter" value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)}>
+                <option value="all">All</option>
+                <option value="awaiting">Awaiting verification</option>
+                <option value="unpaid">Unpaid only</option>
+              </select>
+            </div>
             <button onClick={() => setShowAddPaymentForm(!showAddPaymentForm)}>
               {showAddPaymentForm ? 'Cancel Create Payment' : 'Create New Payment'}
             </button>
@@ -346,7 +376,7 @@ function AdminDashboardPage() {
                       </select>
                     </div>
                     <div className="dialog-actions">
-                      <button type="submit">Create Payments</button>
+                      <button type="submit" disabled={isSaving}>{isSaving ? 'Saving...' : 'Create Payments'}</button>
                       <button type="button" className="secondary-button" onClick={() => setShowAddPaymentForm(false)}>
                         Close
                       </button>
@@ -356,11 +386,11 @@ function AdminDashboardPage() {
               </div>
             )}
 
-            {payments.length === 0 ? (
+            {visiblePayments.length === 0 ? (
               <p>No payments found.</p>
             ) : (
               <ul className="payment-list">
-                {payments.map((payment) => (
+                {visiblePayments.map((payment) => (
                   <li key={payment._id} className={payment.isPaid ? 'paid' : 'unpaid'}>
                     {editingPaymentId === payment._id ? (
                       <div className="edit-payment-form">
@@ -394,10 +424,16 @@ function AdminDashboardPage() {
                           const apartmentNumber = payment.user?.apartmentNumber || 'N/A';
                           return (
                             <>
-                        <span>
-                          User: {userName} ({apartmentNumber}), Amount: ₹{payment.amount}, Due: {new Date(payment.dueDate).toLocaleDateString()}, Status: {payment.status || (payment.isPaid ? 'PAID' : 'PENDING')}
-                          {payment.utr ? `, UTR: ${payment.utr}` : ''}
-                        </span>
+                        <div className="payment-detail-grid">
+                          <p><strong>User</strong><span>{userName}</span></p>
+                          <p><strong>Apartment</strong><span>{apartmentNumber}</span></p>
+                          <p><strong>Amount</strong><span>₹{payment.amount}</span></p>
+                          <p><strong>Due Date</strong><span>{new Date(payment.dueDate).toLocaleDateString()}</span></p>
+                          <p><strong>Status</strong><span>{payment.status || (payment.isPaid ? 'PAID' : 'PENDING')}</span></p>
+                          {payment.utr && (
+                            <p><strong>UTR</strong><span>{payment.utr}</span></p>
+                          )}
+                        </div>
                         {payment.proofImageUrl && (
                           <a href={payment.proofImageUrl} target="_blank" rel="noreferrer" className="proof-link">
                             View Payment Screenshot
@@ -482,7 +518,7 @@ function AdminDashboardPage() {
                       <label htmlFor="sendSMS">Send SMS Notification</label>
                     </div>
                     <div className="dialog-actions">
-                      <button type="submit">Add Announcement</button>
+                      <button type="submit" disabled={isSaving}>{isSaving ? 'Saving...' : 'Add Announcement'}</button>
                       <button type="button" className="secondary-button" onClick={() => setShowAddAnnouncementForm(false)}>
                         Close
                       </button>
