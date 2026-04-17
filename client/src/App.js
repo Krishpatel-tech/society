@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Link, Navigate } from 'react-router-dom'; // Import Navigate
 import { jwtDecode } from 'jwt-decode'; // Import jwtDecode as a named import
+import axios from 'axios';
 import './App.css';
 
 // Import Pages
@@ -12,7 +13,10 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import ProfilePage from './pages/ProfilePage'; // Import new ProfilePage
 
 // ProtectedRoute component for admin access
-const ProtectedRoute = ({ children, isAuthenticated, isAdmin }) => {
+const ProtectedRoute = ({ children, isAuthenticated, isAdmin, isAuthReady }) => {
+  if (!isAuthReady) {
+    return null;
+  }
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
@@ -23,7 +27,10 @@ const ProtectedRoute = ({ children, isAuthenticated, isAdmin }) => {
 };
 
 // UserRoute component for authenticated user access
-const UserRoute = ({ children, isAuthenticated }) => {
+const UserRoute = ({ children, isAuthenticated, isAuthReady }) => {
+  if (!isAuthReady) {
+    return null;
+  }
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
@@ -33,6 +40,7 @@ const UserRoute = ({ children, isAuthenticated }) => {
 function App() {
   const [isAdmin, setIsAdmin] = React.useState(false);
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [isAuthReady, setIsAuthReady] = React.useState(false);
   const [isDarkMode, setIsDarkMode] = React.useState(false);
 
   React.useEffect(() => {
@@ -45,9 +53,18 @@ function App() {
   React.useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      setIsAuthenticated(true);
       try {
         const decodedToken = jwtDecode(token);
+        const tokenExpiry = decodedToken?.exp ? decodedToken.exp * 1000 : 0;
+        const isExpired = !tokenExpiry || tokenExpiry <= Date.now();
+        if (isExpired) {
+          localStorage.removeItem('token');
+          setIsAdmin(false);
+          setIsAuthenticated(false);
+          setIsAuthReady(true);
+          return;
+        }
+        setIsAuthenticated(true);
         setIsAdmin(decodedToken.user.isAdmin);
       } catch (error) {
         console.error('Error decoding token:', error);
@@ -59,6 +76,28 @@ function App() {
       setIsAuthenticated(false);
       setIsAdmin(false);
     }
+    setIsAuthReady(true);
+  }, []);
+
+  React.useEffect(() => {
+    const interceptorId = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          localStorage.removeItem('token');
+          setIsAuthenticated(false);
+          setIsAdmin(false);
+          if (!window.location.pathname.startsWith('/login')) {
+            window.location.href = '/login?session=expired';
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptorId);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -81,7 +120,10 @@ function App() {
     <Router>
       <div className="App">
         <nav className="navbar">
-          <Link to="/" className="nav-brand">KAMAXI TRIPLEX</Link>
+          <Link to="/" className="nav-brand">
+            <img src="/logo192.png" alt="Society Logo" className="nav-logo" />
+            <span>KAMAXI TRIPLEX</span>
+          </Link>
           <div className="nav-links">
             {isAuthenticated ? (
               <>
@@ -148,7 +190,7 @@ function App() {
           <Route
             path="/maintenance"
             element={
-              <UserRoute isAuthenticated={isAuthenticated}>
+              <UserRoute isAuthenticated={isAuthenticated} isAuthReady={isAuthReady}>
                 <MaintenancePage />
               </UserRoute>
             }
@@ -156,7 +198,7 @@ function App() {
           <Route
             path="/announcements"
             element={
-              <UserRoute isAuthenticated={isAuthenticated}>
+              <UserRoute isAuthenticated={isAuthenticated} isAuthReady={isAuthReady}>
                 <AnnouncementsPage />
               </UserRoute>
             }
@@ -164,7 +206,7 @@ function App() {
           <Route
             path="/profile"
             element={
-              <UserRoute isAuthenticated={isAuthenticated}>
+              <UserRoute isAuthenticated={isAuthenticated} isAuthReady={isAuthReady}>
                 <ProfilePage />
               </UserRoute>
             }
@@ -172,7 +214,7 @@ function App() {
           <Route 
             path="/admin" 
             element={
-              <ProtectedRoute isAuthenticated={isAuthenticated} isAdmin={isAdmin}>
+              <ProtectedRoute isAuthenticated={isAuthenticated} isAdmin={isAdmin} isAuthReady={isAuthReady}>
                 <AdminDashboardPage />
               </ProtectedRoute>
             }

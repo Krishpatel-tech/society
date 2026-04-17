@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 function LoginPage() {
@@ -16,6 +16,14 @@ function LoginPage() {
   });
 
   const { name, email, password, phone, apartmentNumber } = formData;
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('session') === 'expired') {
+      setMessage('Session expired. Please login again.');
+      setMessageType('error');
+    }
+  }, []);
 
   const onChange = (e) => {
     if (message) {

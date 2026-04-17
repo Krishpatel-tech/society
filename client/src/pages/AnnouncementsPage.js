@@ -35,7 +35,8 @@ function AnnouncementsPage() {
               <h2>{announcement.title}</h2>
               <p>{announcement.content}</p>
               <p className="announcement-meta">
-                By {announcement.author.name} on {new Date(announcement.createdAt).toLocaleDateString()}
+                By {announcement.author?.name || 'Unknown user'} on{' '}
+                {announcement.createdAt ? new Date(announcement.createdAt).toLocaleDateString() : 'Unknown date'}
               </p>
             </div>
           ))}
