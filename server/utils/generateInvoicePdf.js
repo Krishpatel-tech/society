@@ -131,7 +131,7 @@ function generateInvoicePdf(payment, user, callback) {
       { width: 512, align: 'left' }
     )
     .moveDown(0.7)
-    .text('For support, contact: society@kamaxitriplex.com | +91 98765 43210');
+    .text('For support, contact: society@kamaxitriplex.me | +91 90991 95719');
 
   doc.end();
 }
