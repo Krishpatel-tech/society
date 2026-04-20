@@ -401,7 +401,7 @@ function LoginPage() {
                 name="phone"
                 value={phone}
                 onChange={onChange}
-                placeholder="+91 9876543210"
+                placeholder="9876543210"
               />
             </div>
             <div className="form-group">

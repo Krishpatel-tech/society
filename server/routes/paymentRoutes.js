@@ -9,8 +9,8 @@ const router = express.Router();
 
 const UPI_QR_IMAGE_URL = process.env.UPI_QR_IMAGE_URL || '';
 const UPI_ID = process.env.UPI_ID || '';
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'society@kamaxitriplex.com';
-const SUPPORT_PHONE = process.env.SUPPORT_PHONE || '+91 98765 43210';
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'society@kamaxitriplex.me';
+const SUPPORT_PHONE = process.env.SUPPORT_PHONE || '+91 90991 95719';
 
 const buildMaintenanceIssuedEmail = ({ user, amount, dueDate }) => `
   <div style="font-family: Arial, sans-serif; background:#f8fafc; padding:20px; color:#111827;">

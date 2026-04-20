@@ -11,8 +11,8 @@ const sendSMS = async (phoneNumber, message) => {
   // Implement actual SMS sending logic here using a service like Twilio
 };
 
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'society@kamaxitriplex.com';
-const SUPPORT_PHONE = process.env.SUPPORT_PHONE || '+91 98765 43210';
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'society@kamaxitriplex.me';
+const SUPPORT_PHONE = process.env.SUPPORT_PHONE || '+91 90991 95719';
 
 const buildAnnouncementEmail = ({ title, content, isUpdate = false }) => `
   <div style="font-family: Arial, sans-serif; background:#f8fafc; padding:20px; color:#111827;">
