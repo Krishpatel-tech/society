@@ -34,6 +34,29 @@ function AdminDashboardPage() {
     amount: '',
     dueDate: '',
   });
+
+  const handleViewProof = async (proofImageUrl) => {
+    if (!proofImageUrl) return;
+
+    try {
+      // Legacy proofs may be stored as base64 data URLs.
+      // Convert them to short-lived blob URLs before opening so mobile browsers
+      // don't have to navigate directly to a very large inline URL.
+      if (proofImageUrl.startsWith('data:')) {
+        const response = await fetch(proofImageUrl);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank', 'noopener,noreferrer');
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60 * 1000);
+        return;
+      }
+
+      window.open(proofImageUrl, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      console.error('Error opening payment screenshot:', err);
+      alert('Unable to open payment screenshot. Please try again.');
+    }
+  };
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [isSaving, setIsSaving] = useState(false);
   const { notify, track } = useUX();
@@ -435,9 +458,13 @@ function AdminDashboardPage() {
                           )}
                         </div>
                         {payment.proofImageUrl && (
-                          <a href={payment.proofImageUrl} target="_blank" rel="noreferrer" className="proof-link">
+                          <button
+                            type="button"
+                            className="proof-link"
+                            onClick={() => handleViewProof(payment.proofImageUrl)}
+                          >
                             View Payment Screenshot
-                          </a>
+                          </button>
                         )}
                         <div className="payment-actions">
                           <button onClick={() => handleEditPaymentClick(payment)}>Edit</button>
