@@ -102,7 +102,7 @@ function generateInvoicePdf(payment, user, callback) {
   doc
     .fillColor('#111827')
     .fontSize(10)
-    .text('Monthly Society Maintenance', col1X, rowTop + 11)
+    .text('Society Maintenance', col1X, rowTop + 11)
     .text(dueDate.toLocaleDateString(), col2X, rowTop + 11)
     .text(`INR ${safeAmount.toFixed(2)}`, col3X, rowTop + 11, { width: 70, align: 'right' });
 
