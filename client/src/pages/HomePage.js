@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useUX } from '../context/UXContext';
 
 function HomePage() {
-  const societyPhotos = ['/society/1.png', '/society/2.png'];
+  const societyPhotos = ['/society/1.png', '/society/3.png', '/society/2.png', '/society/4.png', '/society/5.png'];
   const [activeIndex, setActiveIndex] = useState(0);
   const [recentAnnouncements, setRecentAnnouncements] = useState([]);
   const [paymentOverview, setPaymentOverview] = useState(null);
